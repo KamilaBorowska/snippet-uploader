@@ -34,7 +34,11 @@ error_chain! {
 pub struct UserId(pub i32);
 
 impl UserId {
-    pub fn login(self, session: &mut Session, connection: &PgConnection, address: SocketAddr) -> Result<()> {
+    pub fn login(self,
+                 session: &mut Session,
+                 connection: &PgConnection,
+                 address: SocketAddr)
+                 -> Result<()> {
         let UserId(id) = self;
         log_login(connection, self, address.ip())?;
         session.set(Cookie::new("user_id", id.to_string()));
