@@ -11,15 +11,18 @@ use db::user::{self, LoginForm, UserId};
 
 use Context;
 
+use std::net::SocketAddr;
+
 #[post("/", data = "<form>")]
 fn index(mut session: Session,
          form: Form<LoginForm>,
+         address: SocketAddr,
          db: Connection)
          -> user::Result<Flash<Redirect>> {
     let user = form.get();
     match user.login(&db) {
         Ok(id) => {
-            id.login(&mut session);
+            id.login(&mut session, &db, address)?;
             Ok(Flash::success(Redirect::to("/"), "Zalogowano."))
         }
         Err(e) => {

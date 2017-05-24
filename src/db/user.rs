@@ -7,8 +7,11 @@ use rocket::request::{self, FromRequest};
 use rocket::{Request, Outcome};
 
 use bcrypt;
+use ipnetwork::IpNetwork;
 
-use db::schema::users;
+use db::schema::{logins, users};
+
+use std::net::{IpAddr, SocketAddr};
 
 const MIN_PASSWORD_LENGTH: usize = 10;
 const BCRYPT_COST: u32 = 10;
@@ -31,9 +34,11 @@ error_chain! {
 pub struct UserId(pub i32);
 
 impl UserId {
-    pub fn login(self, session: &mut Session) {
+    pub fn login(self, session: &mut Session, connection: &PgConnection, address: SocketAddr) -> Result<()> {
         let UserId(id) = self;
+        log_login(connection, self, address.ip())?;
         session.set(Cookie::new("user_id", id.to_string()));
+        Ok(())
     }
 }
 
@@ -74,6 +79,45 @@ impl RegisterForm {
             .execute(connection)?;
         Ok(UserId(id as i32))
     }
+}
+
+#[derive(Insertable)]
+#[table_name="logins"]
+struct NewLogin {
+    ip: IpNetwork,
+    user_id: i32,
+}
+
+fn log_login(connection: &PgConnection,
+             UserId(id): UserId,
+             ip_to_insert: IpAddr)
+             -> QueryResult<()> {
+    use self::logins::dsl::*;
+    use self::logins;
+
+    let found_ip = logins
+        .filter(user_id.eq(id))
+        .order(time.desc())
+        .select(ip)
+        .first(connection)
+        .optional()?
+        .map(|network: IpNetwork| network.ip());
+
+    if found_ip == Some(ip_to_insert) {
+        return Ok(());
+    }
+
+    diesel::insert(&NewLogin {
+                        user_id: id,
+                        ip: IpNetwork::new(ip_to_insert,
+                                           match ip_to_insert {
+                                               IpAddr::V4(_) => 32,
+                                               IpAddr::V6(_) => 128,
+                                           })
+                                .unwrap(),
+                    }).into(logins::table)
+            .execute(connection)?;
+    Ok(())
 }
 
 #[derive(FromForm)]

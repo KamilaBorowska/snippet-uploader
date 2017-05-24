@@ -12,15 +12,18 @@ use db::user::{self, RegisterForm};
 
 use Context;
 
+use std::net::SocketAddr;
+
 #[post("/", data = "<form>")]
 fn register(mut session: Session,
             form: Form<RegisterForm>,
+            address: SocketAddr,
             db: Connection)
             -> user::Result<Result<Flash<Redirect>, Template>> {
     let user = form.get();
     match user.register(&db) {
         Ok(id) => {
-            id.login(&mut session);
+            id.login(&mut session, &db, address)?;
             Ok(Ok(Flash::success(Redirect::to("/"), "Konto zarejestrowane.")))
         }
         Err(e) => {
