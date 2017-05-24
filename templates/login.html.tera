@@ -1,0 +1,15 @@
+{% extends "base" %}
+{% block content %}
+<form action="/login" method="POST">
+    <table class="login-form">
+    <tr>
+        <td> <label for="name">Użytkownik:</label>
+        <td> <input name="name">
+    <tr>
+        <td> <label for="password">Hasło:</label>
+        <td> <input name="password" type="password">
+    <tr>
+        <td colspan="2">
+            <input type="submit" value="Zaloguj">
+    </table>
+{% endblock content %}

@@ -1,0 +1,9 @@
+<!DOCTYPE html>
+<meta charset=utf-8>
+<title>{{title}} - Przesyłanie plików</title>
+<link rel=stylesheet href="/css/index.css">
+<h1>{{title}}</h1>
+{% if flash %}
+<p class=flash>{{ flash }}</p>
+{% endif %}
+{% block content %}{% endblock content %}

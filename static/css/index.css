@@ -1,0 +1,29 @@
+html {
+    font-family: sans-serif;
+}
+
+body {
+    width: 600px;
+    margin: 0 auto;
+    padding: 0.5em;
+    background: white;
+    color: #444;
+}
+
+.login-form {
+    width: 100%;
+}
+
+.login-form td:first-child {
+    width: 150px;
+}
+
+.login-form input[type="submit"] {
+    margin-left: 154px;
+}
+
+.flash {
+    border-radius: 4px;
+    background-color: #ffa;
+    padding: 0.5em;
+}
