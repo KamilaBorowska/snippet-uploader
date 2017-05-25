@@ -34,13 +34,8 @@ error_chain! {
 pub struct UserId(pub i32);
 
 impl UserId {
-    pub fn login(self,
-                 session: &mut Session,
-                 connection: &PgConnection,
-                 address: SocketAddr)
-                 -> Result<()> {
+    pub fn login(self, session: &mut Session) -> Result<()> {
         let UserId(id) = self;
-        log_login(connection, self, address.ip())?;
         session.set(Cookie::new("user_id", id.to_string()));
         Ok(())
     }
@@ -96,7 +91,8 @@ struct NewLogin {
 
 fn log_login(connection: &PgConnection,
              UserId(id): UserId,
-             ip_to_insert: IpAddr)
+             ip_to_insert: IpAddr,
+             successful_login: bool)
              -> QueryResult<()> {
     use self::logins::dsl::*;
     use self::logins;
@@ -120,7 +116,7 @@ fn log_login(connection: &PgConnection,
         IpAddr::V6(_) => 128,
     })
                                .unwrap(),
-                       successful: true,
+                       successful: successful_login,
                    })
             .into(logins::table)
             .execute(connection)?;
@@ -134,7 +130,7 @@ pub struct LoginForm {
 }
 
 impl LoginForm {
-    pub fn login(&self, connection: &PgConnection) -> Result<UserId> {
+    pub fn login(&self, connection: &PgConnection, address: SocketAddr) -> Result<UserId> {
         #[derive(Queryable)]
         struct PasswordRow {
             id: i32,
@@ -148,8 +144,11 @@ impl LoginForm {
             .select((user_id, password))
             .first(connection)?;
 
-        if bcrypt::verify(&self.password, &row.hashed)? {
-            Ok(UserId(row.id))
+        let successful_login = bcrypt::verify(&self.password, &row.hashed)?;
+        let id = UserId(row.id);
+        log_login(connection, id, address.ip(), successful_login)?;
+        if successful_login {
+            Ok(id)
         } else {
             bail!(ErrorKind::InvalidUserOrPassword)
         }

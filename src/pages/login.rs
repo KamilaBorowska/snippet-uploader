@@ -20,9 +20,9 @@ fn index(mut session: Session,
          db: Connection)
          -> user::Result<Flash<Redirect>> {
     let user = form.get();
-    match user.login(&db) {
+    match user.login(&db, address) {
         Ok(id) => {
-            id.login(&mut session, &db, address)?;
+            id.login(&mut session)?;
             Ok(Flash::success(Redirect::to("/"), "Zalogowano."))
         }
         Err(e) => {
