@@ -26,12 +26,11 @@ fn index(mut session: Session,
             Ok(Flash::success(Redirect::to("/"), "Zalogowano."))
         }
         Err(e) => {
-            Ok(Flash::error(Redirect::to("/login"),
-                            match *e.kind() {
-                                user::ErrorKind::Query(diesel::result::Error::NotFound) => "Niepoprawny login.",
-                                user::ErrorKind::InvalidUserOrPassword => "Niepoprawny login lub hasło.",
-                                _ => return Err(e),
-                            }))
+            Ok(Flash::error(Redirect::to("/login"), match *e.kind() {
+                user::ErrorKind::Query(diesel::result::Error::NotFound) => "Niepoprawny login.",
+                user::ErrorKind::InvalidUserOrPassword => "Niepoprawny login lub hasło.",
+                _ => return Err(e),
+            }))
         }
     }
 }
@@ -46,10 +45,10 @@ fn page(flash: Option<FlashMessage>) -> Template {
     let message = flash.as_ref().map(|f| f.msg());
     Template::render("login",
                      &Context {
-                          title: "Logowanie",
-                          flash: message,
-                          page: "",
-                      })
+                         title: "Logowanie",
+                         flash: message,
+                         page: "",
+                     })
 }
 
 pub fn routes() -> Vec<Route> {

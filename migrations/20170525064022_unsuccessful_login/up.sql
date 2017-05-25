@@ -1,0 +1,2 @@
+ALTER TABLE logins ADD COLUMN successful boolean NOT NULL DEFAULT TRUE;
+ALTER TABLE logins ALTER COLUMN successful DROP DEFAULT;
