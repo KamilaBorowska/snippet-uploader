@@ -1,0 +1,13 @@
+{% extends "base" %}
+{% block content %}
+<form action="/upload" method="POST">
+    <table class="login-form">
+    <tr>
+        <td> <label for="file">Plik:</label>
+        <td> <input name="file" type="file">
+    <tr>
+        <td colspan="2">
+            <input type="submit" value="Wrzuć plik">
+    </table>
+</form>
+{% endblock content %}

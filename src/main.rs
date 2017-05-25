@@ -20,6 +20,8 @@ mod db;
 mod pages;
 mod static_file;
 
+use rocket::Data;
+use rocket::request::FlashMessage;
 use rocket::response::{Flash, Redirect};
 use rocket_contrib::Template;
 
@@ -34,9 +36,20 @@ struct Context<'a, T> {
     page: T,
 }
 
+#[post("/upload", format = "multipart/form-data", data = "<data>")]
+fn upload(user_id: UserId, data: Data) -> &'static str {
+    "Przyjęto"
+}
+
 #[get("/")]
-fn main_page(user_id: UserId) -> &'static str {
-    "Strona główna"
+fn main_page(user_id: UserId, flash: Option<FlashMessage>) -> Template {
+    let message = flash.as_ref().map(|f| f.msg());
+    Template::render("upload",
+                     &Context {
+                         title: "Strona główna",
+                         flash: message,
+                         page: (),
+                     })
 }
 
 #[get("/", rank = 2)]
@@ -49,7 +62,7 @@ fn main() {
         .manage(init_pool())
         .attach(Template::fairing())
         .mount("/",
-               routes![main_page, login_redirect, static_file::static_file])
+               routes![main_page, login_redirect, upload, static_file::static_file])
         .mount("/login", login::routes())
         .mount("/register", register::routes())
         .launch();
