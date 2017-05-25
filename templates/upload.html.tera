@@ -10,4 +10,12 @@
             <input type="submit" value="Wrzuć plik">
     </table>
 </form>
+{% if page %}
+<h2>Dostępne pliki</h2>
+<ul>
+{% for file in page %}
+<li> {{file}}
+{% endfor %}
+</ul>
+{% endif %}
 {% endblock content %}

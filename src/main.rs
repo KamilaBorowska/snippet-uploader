@@ -44,7 +44,10 @@ struct Context<'a, T> {
 }
 
 #[post("/upload", format = "multipart/form-data", data = "<data>")]
-fn upload(connection: Connection, user_id: UserId, data: Data) -> Result<Flash<Redirect>, Box<Error>> {
+fn upload(connection: Connection,
+          user_id: UserId,
+          data: Data)
+          -> Result<Flash<Redirect>, Box<Error>> {
     // temporary, no multipart/form-data support so far
     let name = Path::new("plik.txt");
     let contents = b"zawartosc\r\n";
@@ -80,14 +83,22 @@ fn upload(connection: Connection, user_id: UserId, data: Data) -> Result<Flash<R
 }
 
 #[get("/")]
-fn main_page(user_id: UserId, flash: Option<FlashMessage>) -> Template {
+fn main_page(connection: Connection,
+             user_id: UserId,
+             flash: Option<FlashMessage>)
+             -> Result<Template, Box<Error>> {
+    use db::schema::files::dsl;
     let message = flash.as_ref().map(|f| f.msg());
-    Template::render("upload",
-                     &Context {
-                         title: "Strona główna",
-                         flash: message,
-                         page: (),
-                     })
+    let files: Vec<String> = files::table
+        .filter(dsl::user_id.eq(user_id.0))
+        .select(dsl::name)
+        .load(&*connection)?;
+    Ok(Template::render("upload",
+                        &Context {
+                            title: "Strona główna",
+                            flash: message,
+                            page: files,
+                        }))
 }
 
 #[get("/", rank = 2)]
