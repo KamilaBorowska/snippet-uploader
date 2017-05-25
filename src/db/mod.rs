@@ -1,4 +1,4 @@
-mod schema;
+pub mod schema;
 pub mod user;
 
 use std::ops::Deref;
