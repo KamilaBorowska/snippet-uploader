@@ -94,20 +94,7 @@ fn log_login(connection: &PgConnection,
              ip_to_insert: IpAddr,
              successful_login: bool)
              -> QueryResult<()> {
-    use self::logins::dsl::*;
     use self::logins;
-
-    let found_ip = logins
-        .filter(user_id.eq(id))
-        .order(time.desc())
-        .select(ip)
-        .first(connection)
-        .optional()?
-        .map(|network: IpNetwork| network.ip());
-
-    if found_ip == Some(ip_to_insert) {
-        return Ok(());
-    }
 
     diesel::insert(&NewLogin {
                        user_id: id,
