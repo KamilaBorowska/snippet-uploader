@@ -29,6 +29,10 @@ use db::init_pool;
 use db::user::UserId;
 use pages::{login, register};
 
+use std::io::{self, Write};
+use std::fs::{self, File};
+use std::path::Path;
+
 #[derive(Serialize)]
 struct Context<'a, T> {
     title: &'a str,
@@ -37,8 +41,22 @@ struct Context<'a, T> {
 }
 
 #[post("/upload", format = "multipart/form-data", data = "<data>")]
-fn upload(user_id: UserId, data: Data) -> &'static str {
-    "Przyjęto"
+fn upload(user_id: UserId, data: Data) -> io::Result<Flash<Redirect>> {
+    // temporary, no multipart/form-data support so far
+    let name = Path::new("plik.txt");
+    let contents = b"zawartosc\r\n";
+
+    let file_name = if let Some(name) = name.file_name() {
+        name
+    } else {
+        return Ok(Flash::error(Redirect::to("/"), "Plik nie ma nazwy."));
+    };
+
+    let upload_path = Path::new("uploads").join(user_id.0.to_string());
+
+    fs::create_dir_all(&upload_path)?;
+    File::create(upload_path.join(file_name))?.write(contents)?;
+    Ok(Flash::success(Redirect::to("/"), "Plik został wrzucony."))
 }
 
 #[get("/")]
