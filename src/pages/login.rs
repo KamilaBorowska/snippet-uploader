@@ -5,9 +5,10 @@ use rocket::response::{Flash, Redirect};
 use rocket_contrib::Template;
 
 use diesel;
+use diesel::prelude::*;
 use db::Connection;
 
-use db::user::{self, LoginForm, UserId};
+use db::user::{self, Error, LoginForm, UserId};
 
 use Context;
 
@@ -22,7 +23,7 @@ fn index(mut session: Session,
     let user = form.get();
     match user.login(&db, address) {
         Ok(id) => {
-            id.login(&mut session)?;
+            id.login(&mut session, &db)?;
             Ok(Flash::success(Redirect::to("/"), "Zalogowano."))
         }
         Err(e) => {
@@ -52,6 +53,13 @@ fn page(flash: Option<FlashMessage>) -> Template {
                       })
 }
 
+#[get("/logout")]
+fn logout(user: UserId, connection: Connection) -> Result<Redirect, Error> {
+    use db::schema::sessions::dsl::*;
+    diesel::delete(sessions.filter(user_id.eq(user.0))).execute(&*connection)?;
+    Ok(Redirect::to("/"))
+}
+
 pub fn routes() -> Vec<Route> {
-    routes![index, redirect, page]
+    routes![index, redirect, page, logout]
 }

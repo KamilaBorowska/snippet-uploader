@@ -12,9 +12,10 @@
 </form>
 {% if page %}
 <h2>Dostępne pliki</h2>
+<p>Pliki te są dostępne publicznie i można przekazać linki do nich.</p>
 <ul>
 {% for file in page.files %}
-<li> <a href="files/{{page.user_id}}/{{file}}">{{file}}</a>
+<li> <a href="files/{{page.user_id}}/{{file}}">{{file}}</a> (<a href="files/{{page.user_id}}/{{file}}/display">wyświetl w przeglądarce</a>)
 {% endfor %}
 </ul>
 {% endif %}

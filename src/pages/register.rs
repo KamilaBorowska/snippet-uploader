@@ -20,7 +20,7 @@ fn register(mut session: Session,
     let user = form.get();
     match user.register(&db) {
         Ok(id) => {
-            id.login(&mut session)?;
+            id.login(&mut session, &db)?;
             Ok(Ok(Flash::success(Redirect::to("/"), "Konto zarejestrowane.")))
         }
         Err(e) => {

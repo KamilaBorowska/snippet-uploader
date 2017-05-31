@@ -3,6 +3,12 @@
 <title>{{title}} - Przesyłanie plików</title>
 <link rel=stylesheet href="/css/index.css">
 <h1>{{title}}</h1>
+<ul>
+<li> <a href="/">Strona główna</a>
+<li> <a href="/register">Rejestracja</a>
+<li> <a href="/logins">Próby zalogowania się</a>
+<li> <a href="/login/logout">Wyloguj</a>
+</ul>
 {% if flash %}
 <p class=flash>{{ flash }}</p>
 {% endif %}

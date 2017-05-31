@@ -9,6 +9,7 @@ use rocket::{Request, Outcome};
 use bcrypt;
 use ipnetwork::IpNetwork;
 
+use Connection;
 use db::schema::{logins, users};
 
 use std::net::{IpAddr, SocketAddr};
@@ -34,9 +35,20 @@ error_chain! {
 pub struct UserId(pub i32);
 
 impl UserId {
-    pub fn login(self, session: &mut Session) -> Result<()> {
+    pub fn login(self, session: &mut Session, connection: &PgConnection) -> Result<()> {
+        #[derive(Insertable)]
+        #[table_name = "sessions"]
+        struct NewUid {
+            user_id: i32,
+        }
+
+        use db::schema::sessions;
+
         let UserId(id) = self;
-        session.set(Cookie::new("user_id", id.to_string()));
+        let session_id: i32 = diesel::insert(&NewUid { user_id: id }).into(sessions::table)
+            .returning(sessions::dsl::session_id)
+            .get_result(connection)?;
+        session.set(Cookie::new("session_id", session_id.to_string()));
         Ok(())
     }
 }
@@ -144,14 +156,30 @@ impl<'a, 'r> FromRequest<'a, 'r> for UserId {
     type Error = ();
 
     fn from_request(request: &'a Request<'r>) -> request::Outcome<UserId, ()> {
-        let user = request
+        let id: Option<i32> = request
             .session()
-            .get("user_id")
-            .and_then(|cookie| cookie.value().parse().ok())
-            .map(UserId);
+            .get("session_id")
+            .and_then(|cookie| cookie.value().parse().ok());
 
-        match user {
-            Some(user) => Outcome::Success(user),
+        match id {
+            Some(session) => {
+                let connection = match Connection::from_request(request) {
+                    Outcome::Success(connection) => connection,
+                    Outcome::Failure(f) => return Outcome::Failure(f),
+                    Outcome::Forward(f) => return Outcome::Forward(f),
+                };
+
+                use db::schema::sessions::dsl::*;
+
+                let result = match sessions
+                          .filter(session_id.eq(session))
+                          .select(user_id)
+                          .first(&*connection) {
+                    Ok(result) => result,
+                    Err(_) => return Outcome::Forward(()),
+                };
+                Outcome::Success(UserId(result))
+            }
             None => Outcome::Forward(()),
         }
     }

@@ -1,0 +1,12 @@
+{% extends "base" %}
+{% block content %}
+<ul>
+{% for attempt in page %}
+<li> {% if attempt.successful %}
+<b>Udane zalogowanie</b>
+{% else %}
+Nieudane zalogowanie
+{% endif %}, IP: {{attempt.ip}}, czas: {{attempt.time}}
+{% endfor %}
+</ul>
+{% endblock content %}
