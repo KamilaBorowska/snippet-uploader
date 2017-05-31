@@ -13,8 +13,8 @@
 {% if page %}
 <h2>Dostępne pliki</h2>
 <ul>
-{% for file in page %}
-<li> {{file}}
+{% for file in page.files %}
+<li> <a href="files/{{page.user_id}}/{{file}}">{{file}}</a>
 {% endfor %}
 </ul>
 {% endif %}

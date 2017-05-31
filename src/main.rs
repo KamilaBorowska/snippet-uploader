@@ -23,7 +23,7 @@ mod static_file;
 mod upload;
 
 use rocket::request::FlashMessage;
-use rocket::response::{Flash, Redirect};
+use rocket::response::{Flash, NamedFile, Redirect};
 use rocket_contrib::Template;
 
 use diesel::prelude::*;
@@ -33,6 +33,8 @@ use db::user::UserId;
 use pages::{login, register, upload as upload_page};
 
 use std::error::Error;
+use std::io;
+use std::path::Path;
 
 #[derive(Serialize)]
 struct Context<'a, T> {
@@ -48,14 +50,24 @@ fn main_page(connection: Connection,
              -> Result<Template, Box<Error>> {
     use db::schema::files::dsl;
     let message = flash.as_ref().map(|f| f.msg());
-    let files: Vec<String> = files::table.filter(dsl::user_id.eq(user_id.0))
+    let files = files::table.filter(dsl::user_id.eq(user_id.0))
         .select(dsl::name)
         .load(&*connection)?;
+
+    #[derive(Serialize)]
+    struct UploadPage {
+        files: Vec<String>,
+        user_id: i32,
+    }
+
     Ok(Template::render("upload",
                         &Context {
                              title: "Strona główna",
                              flash: message,
-                             page: files,
+                             page: UploadPage {
+                                 files: files,
+                                 user_id: user_id.0,
+                             },
                          }))
 }
 
@@ -64,12 +76,19 @@ fn login_redirect() -> Flash<Redirect> {
     Flash::error(Redirect::to("/login"), "Ta strona wymaga zalogowania.")
 }
 
+#[get("/files/<user_id>/<path>")]
+fn download(user_id: i32, path: String) -> io::Result<NamedFile> {
+    NamedFile::open(Path::new("uploads/")
+                        .join(user_id.to_string())
+                        .join(path))
+}
+
 fn main() {
     rocket::ignite()
         .manage(init_pool())
         .attach(Template::fairing())
         .mount("/",
-               routes![main_page, login_redirect, static_file::static_file])
+               routes![main_page, login_redirect, download, static_file::static_file])
         .mount("/login", login::routes())
         .mount("/register", register::routes())
         .mount("/upload", upload_page::routes())
