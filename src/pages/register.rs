@@ -28,9 +28,7 @@ fn register(mut session: Session,
                 user::ErrorKind::PasswordsNotIdentical => "Hasła nie są identyczne",
                 user::ErrorKind::PasswordTooShort => "Hasło za krótkie",
                 user::ErrorKind::Query(diesel::result::Error::DatabaseError(DatabaseErrorKind::UniqueViolation, _)) => "Użytkownik już istnieje",
-                user::ErrorKind::Query(diesel::result::Error::DatabaseError(_, _)) => {
-                    "Użytkownik musi składać się tylko z liter"
-                }
+                user::ErrorKind::Query(diesel::result::Error::DatabaseError(_, _)) => "Użytkownik musi składać się tylko z liter",
                 _ => return Err(e),
             };
             Ok(Err(page_internal(Some(Flash::error((), error)), &user.name)))
@@ -42,10 +40,10 @@ fn page_internal(flash: Option<FlashMessage>, name: &str) -> Template {
     let message = flash.as_ref().map(|f| f.msg());
     Template::render("register",
                      &Context {
-                         title: "Rejestracja",
-                         flash: message,
-                         page: name,
-                     })
+                          title: "Rejestracja",
+                          flash: message,
+                          page: name,
+                      })
 }
 
 #[get("/")]

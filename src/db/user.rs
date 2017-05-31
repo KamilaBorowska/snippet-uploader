@@ -74,8 +74,7 @@ impl RegisterForm {
             name: &self.name,
             password: &bcrypt::hash(&self.password, BCRYPT_COST).unwrap(),
         };
-        let id = diesel::insert(&new_user)
-            .into(users::table)
+        let id = diesel::insert(&new_user).into(users::table)
             .execute(connection)?;
         Ok(UserId(id as i32))
     }
@@ -97,15 +96,15 @@ fn log_login(connection: &PgConnection,
     use self::logins;
 
     diesel::insert(&NewLogin {
-                       user_id: id,
-                       ip: IpNetwork::new(ip_to_insert, match ip_to_insert {
-        IpAddr::V4(_) => 32,
-        IpAddr::V6(_) => 128,
-    })
-                               .unwrap(),
-                       successful: successful_login,
-                   })
-            .into(logins::table)
+                        user_id: id,
+                        ip: IpNetwork::new(ip_to_insert,
+                                           match ip_to_insert {
+                                               IpAddr::V4(_) => 32,
+                                               IpAddr::V6(_) => 128,
+                                           })
+                                .unwrap(),
+                        successful: successful_login,
+                    }).into(logins::table)
             .execute(connection)?;
     Ok(())
 }
@@ -126,8 +125,7 @@ impl LoginForm {
 
         use db::schema::users::dsl::*;
 
-        let row: PasswordRow = users
-            .filter(name.eq(&self.name))
+        let row: PasswordRow = users.filter(name.eq(&self.name))
             .select((user_id, password))
             .first(connection)?;
 

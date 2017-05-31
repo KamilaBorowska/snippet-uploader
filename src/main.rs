@@ -15,12 +15,13 @@ extern crate bcrypt;
 #[macro_use]
 extern crate error_chain;
 extern crate ipnetwork;
+extern crate multipart;
 
 mod db;
 mod pages;
 mod static_file;
+mod upload;
 
-use rocket::Data;
 use rocket::request::FlashMessage;
 use rocket::response::{Flash, Redirect};
 use rocket_contrib::Template;
@@ -29,57 +30,15 @@ use diesel::prelude::*;
 use db::{init_pool, Connection};
 use db::schema::files;
 use db::user::UserId;
-use pages::{login, register};
+use pages::{login, register, upload as upload_page};
 
 use std::error::Error;
-use std::io::{self, Write};
-use std::fs::{self, File};
-use std::path::Path;
 
 #[derive(Serialize)]
 struct Context<'a, T> {
     title: &'a str,
     flash: Option<&'a str>,
     page: T,
-}
-
-#[post("/upload", format = "multipart/form-data", data = "<data>")]
-fn upload(connection: Connection,
-          user_id: UserId,
-          data: Data)
-          -> Result<Flash<Redirect>, Box<Error>> {
-    // temporary, no multipart/form-data support so far
-    let name = Path::new("plik.txt");
-    let contents = b"zawartosc\r\n";
-
-    let cow_name;
-    let file_name = if let Some(name) = name.file_name() {
-        cow_name = name.to_string_lossy();
-        &*cow_name
-    } else {
-        return Ok(Flash::error(Redirect::to("/"), "Plik nie ma właściwej nazwy."));
-    };
-
-    let upload_path = Path::new("uploads").join(user_id.0.to_string());
-
-    fs::create_dir_all(&upload_path)?;
-    File::create(upload_path.join(file_name))?.write(contents)?;
-
-    #[derive(Insertable)]
-    #[table_name="files"]
-    struct NewFile<'a> {
-        name: &'a str,
-        user_id: i32,
-    }
-
-    diesel::insert(&NewFile {
-                       name: file_name,
-                       user_id: user_id.0,
-                   })
-            .into(files::table)
-            .execute(&*connection)?;
-
-    Ok(Flash::success(Redirect::to("/"), "Plik został wrzucony."))
 }
 
 #[get("/")]
@@ -89,16 +48,15 @@ fn main_page(connection: Connection,
              -> Result<Template, Box<Error>> {
     use db::schema::files::dsl;
     let message = flash.as_ref().map(|f| f.msg());
-    let files: Vec<String> = files::table
-        .filter(dsl::user_id.eq(user_id.0))
+    let files: Vec<String> = files::table.filter(dsl::user_id.eq(user_id.0))
         .select(dsl::name)
         .load(&*connection)?;
     Ok(Template::render("upload",
                         &Context {
-                            title: "Strona główna",
-                            flash: message,
-                            page: files,
-                        }))
+                             title: "Strona główna",
+                             flash: message,
+                             page: files,
+                         }))
 }
 
 #[get("/", rank = 2)]
@@ -111,8 +69,9 @@ fn main() {
         .manage(init_pool())
         .attach(Template::fairing())
         .mount("/",
-               routes![main_page, login_redirect, upload, static_file::static_file])
+               routes![main_page, login_redirect, static_file::static_file])
         .mount("/login", login::routes())
         .mount("/register", register::routes())
+        .mount("/upload", upload_page::routes())
         .launch();
 }
