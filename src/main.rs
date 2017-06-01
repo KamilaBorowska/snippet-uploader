@@ -17,6 +17,7 @@ extern crate error_chain;
 extern crate ipnetwork;
 extern crate multipart;
 extern crate chrono;
+extern crate sha2;
 
 mod db;
 mod pages;
@@ -139,8 +140,8 @@ fn logins_login_redirect() -> Flash<Redirect> {
 }
 
 #[get("/files/<user_id>/<path>")]
-fn download(user_id: i32, path: String) -> io::Result<NamedFile> {
-    NamedFile::open(Path::new("uploads/")
+fn download(user_id: i32, path: String) -> io::Result<File> {
+    File::open(Path::new("uploads/")
                         .join(user_id.to_string())
                         .join(path))
 }

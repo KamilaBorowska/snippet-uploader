@@ -1,6 +1,7 @@
 {% extends "base" %}
 {% block content %}
 <form action="/login" method="POST">
+    <input type="hidden" name="csrf" value="{{page}}">
     <table class="login-form">
     <tr>
         <td> <label for="name">Użytkownik:</label>

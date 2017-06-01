@@ -10,9 +10,20 @@ use db::Connection;
 
 use db::user::{self, Error, LoginForm, UserId};
 
+use sha2::{Sha256, Digest};
+
 use Context;
 
 use std::net::SocketAddr;
+use std::hash::{Hash, Hasher, SipHasher};
+
+fn csrf_token_for(address: &SocketAddr) -> String {
+    let mut hasher = Sha256::default();
+    hasher.input(b"GERNVEWffewjomfewomoewnvikrnv53858328r");
+    hasher.input(address.ip().to_string().as_bytes());
+    hasher.input(b"EWGGgjrwgvmewogn32ng3otno3gjo3whgo4hgo4hj90ge0wsm0f");
+    hasher.result().iter().map(|v| format!("{:02x}", v)).collect()
+}
 
 #[post("/", data = "<form>")]
 fn index(mut session: Session,
@@ -21,6 +32,9 @@ fn index(mut session: Session,
          db: Connection)
          -> user::Result<Flash<Redirect>> {
     let user = form.get();
+    if csrf_token_for(&address) != user.csrf {
+        return Ok(Flash::error(Redirect::to("/login"), "Nie ma tokenu CSRF"));
+    }
     match user.login(&db, address) {
         Ok(id) => {
             id.login(&mut session, &db)?;
@@ -43,13 +57,14 @@ fn redirect(_user: UserId) -> Flash<Redirect> {
 }
 
 #[get("/", rank = 2)]
-fn page(flash: Option<FlashMessage>) -> Template {
+fn page(flash: Option<FlashMessage>, address: SocketAddr) -> Template {
     let message = flash.as_ref().map(|f| f.msg());
+    let csrf_token = csrf_token_for(&address);
     Template::render("login",
                      &Context {
                           title: "Logowanie",
                           flash: message,
-                          page: "",
+                          page: csrf_token,
                       })
 }
 

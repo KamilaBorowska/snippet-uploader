@@ -125,6 +125,7 @@ fn log_login(connection: &PgConnection,
 pub struct LoginForm {
     pub name: String,
     pub password: String,
+    pub csrf: String,
 }
 
 impl LoginForm {
