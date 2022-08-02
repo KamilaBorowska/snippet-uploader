@@ -2,11 +2,11 @@
 name = "snippet-uploader"
 version = "0.1.0"
 authors = ["Konrad Borowski <konrad@borowski.pw>"]
+edition = "2018"
 
 [dependencies]
-rocket = { git = "https://github.com/SergioBenitez/Rocket/" }
-rocket_codegen = { git = "https://github.com/SergioBenitez/Rocket/" }
-rocket_contrib = { git = "https://github.com/SergioBenitez/Rocket/", default-features = false, features = ["tera_templates"] }
+rocket = { version = "=0.5.0-rc.2", features = ["secrets"] }
+rocket_dyn_templates = { version = "=0.1.0-rc.2", features = ["tera"] }
 diesel = { version = "0.13.0", features = ["postgres", "network-address", "chrono"] }
 diesel_codegen = { version = "0.13.0", features = ["postgres"] }
 r2d2 = "0.7.2"

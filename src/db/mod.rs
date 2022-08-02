@@ -8,8 +8,8 @@ use r2d2::{Config, Pool, PooledConnection};
 use r2d2_diesel::ConnectionManager;
 
 use rocket::http::Status;
-use rocket::request::{self, FromRequest};
-use rocket::{Request, State, Outcome};
+use rocket::request::{FromRequest, Outcome};
+use rocket::{Request, State};
 
 pub fn init_pool() -> Pool<ConnectionManager<PgConnection>> {
     let config = Config::default();
@@ -27,11 +27,12 @@ impl Deref for Connection {
     }
 }
 
-impl<'a, 'r> FromRequest<'a, 'r> for Connection {
+#[rocket::async_trait]
+impl<'r> FromRequest<'r> for Connection {
     type Error = ();
 
-    fn from_request(request: &'a Request<'r>) -> request::Outcome<Connection, ()> {
-        let pool = match State::<Pool<_>>::from_request(request) {
+    async fn from_request(request: &'r Request<'_>) -> Outcome<Connection, ()> {
+        let pool = match <&State<Pool<_>>>::from_request(request).await {
             Outcome::Success(pool) => pool,
             Outcome::Failure(e) => return Outcome::Failure(e),
             Outcome::Forward(_) => return Outcome::Forward(()),

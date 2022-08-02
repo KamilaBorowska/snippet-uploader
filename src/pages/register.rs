@@ -1,26 +1,27 @@
 use rocket::Route;
-use rocket::http::Session;
-use rocket::request::{FlashMessage, Form};
-use rocket::response::{Flash, Redirect};
-use rocket_contrib::Template;
+use rocket::form::Form;
+use rocket::http::CookieJar;
+use rocket::request::FlashMessage;
+use rocket::response::{Debug, Flash, Redirect};
+use rocket_dyn_templates::Template;
 
 use diesel;
 use diesel::result::DatabaseErrorKind;
-use db::Connection;
+use crate::db::Connection;
 
-use db::user::{self, RegisterForm};
+use crate::db::user::{self, RegisterForm};
 
-use Context;
+use crate::Context;
 
 #[post("/", data = "<form>")]
-fn register(mut session: Session,
+fn register(cookie_jar: &CookieJar<'_>,
             form: Form<RegisterForm>,
             db: Connection)
-            -> user::Result<Result<Flash<Redirect>, Template>> {
-    let user = form.get();
+            -> Result<Result<Flash<Redirect>, Template>, Debug<user::Error>> {
+    let user = form.into_inner();
     match user.register(&db) {
         Ok(id) => {
-            id.login(&mut session, &db)?;
+            id.login(cookie_jar, &db)?;
             Ok(Ok(Flash::success(Redirect::to("/"), "Konto zarejestrowane.")))
         }
         Err(e) => {
@@ -29,15 +30,15 @@ fn register(mut session: Session,
                 user::ErrorKind::PasswordTooShort => "Hasło za krótkie",
                 user::ErrorKind::Query(diesel::result::Error::DatabaseError(DatabaseErrorKind::UniqueViolation, _)) => "Użytkownik już istnieje",
                 user::ErrorKind::Query(diesel::result::Error::DatabaseError(_, _)) => "Użytkownik musi składać się tylko z liter",
-                _ => return Err(e),
+                _ => return Err(Debug(e)),
             };
-            Ok(Err(page_internal(Some(Flash::error((), error)), &user.name)))
+            Ok(Err(page_internal(Some(Flash::error(cookie_jar, error)), &user.name)))
         }
     }
 }
 
 fn page_internal(flash: Option<FlashMessage>, name: &str) -> Template {
-    let message = flash.as_ref().map(|f| f.msg());
+    let message = flash.as_ref().map(|f| f.message());
     Template::render("register",
                      &Context {
                           title: "Rejestracja",

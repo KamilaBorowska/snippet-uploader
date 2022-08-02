@@ -1,21 +1,21 @@
 use rocket::Route;
-use rocket::http::Session;
-use rocket::request::{FlashMessage, Form};
-use rocket::response::{Flash, Redirect};
-use rocket_contrib::Template;
+use rocket::form::Form;
+use rocket::http::CookieJar;
+use rocket::request::{FlashMessage};
+use rocket::response::{Debug, Flash, Redirect};
+use rocket_dyn_templates::Template;
 
 use diesel;
 use diesel::prelude::*;
-use db::Connection;
+use crate::db::Connection;
 
-use db::user::{self, Error, LoginForm, UserId};
+use crate::db::user::{self, Error, LoginForm, UserId};
 
 use sha2::{Sha256, Digest};
 
-use Context;
+use crate::Context;
 
 use std::net::SocketAddr;
-use std::hash::{Hash, Hasher, SipHasher};
 
 fn csrf_token_for(address: &SocketAddr) -> String {
     let mut hasher = Sha256::default();
@@ -26,18 +26,18 @@ fn csrf_token_for(address: &SocketAddr) -> String {
 }
 
 #[post("/", data = "<form>")]
-fn index(mut session: Session,
+fn index(cookie_jar: &CookieJar<'_>,
          form: Form<LoginForm>,
          address: SocketAddr,
          db: Connection)
-         -> user::Result<Flash<Redirect>> {
-    let user = form.get();
+         -> Result<Flash<Redirect>, Debug<user::Error>> {
+    let user = form.into_inner();
     if csrf_token_for(&address) != user.csrf {
         return Ok(Flash::error(Redirect::to("/login"), "Nie ma tokenu CSRF"));
     }
     match user.login(&db, address) {
         Ok(id) => {
-            id.login(&mut session, &db)?;
+            id.login(cookie_jar, &db)?;
             Ok(Flash::success(Redirect::to("/"), "Zalogowano."))
         }
         Err(e) => {
@@ -45,7 +45,7 @@ fn index(mut session: Session,
                             match *e.kind() {
                                 user::ErrorKind::Query(diesel::result::Error::NotFound) => "Niepoprawny login.",
                                 user::ErrorKind::InvalidUserOrPassword => "Niepoprawny login lub hasło.",
-                                _ => return Err(e),
+                                _ => return Err(e.into()),
                             }))
         }
     }
@@ -58,7 +58,7 @@ fn redirect(_user: UserId) -> Flash<Redirect> {
 
 #[get("/", rank = 2)]
 fn page(flash: Option<FlashMessage>, address: SocketAddr) -> Template {
-    let message = flash.as_ref().map(|f| f.msg());
+    let message = flash.as_ref().map(|f| f.message());
     let csrf_token = csrf_token_for(&address);
     Template::render("login",
                      &Context {
@@ -69,9 +69,9 @@ fn page(flash: Option<FlashMessage>, address: SocketAddr) -> Template {
 }
 
 #[get("/logout")]
-fn logout(user: UserId, connection: Connection) -> Result<Redirect, Error> {
-    use db::schema::sessions::dsl::*;
-    diesel::delete(sessions.filter(user_id.eq(user.0))).execute(&*connection)?;
+fn logout(user: UserId, connection: Connection) -> Result<Redirect, Debug<Error>> {
+    use crate::db::schema::sessions::dsl::*;
+    diesel::delete(sessions.filter(user_id.eq(user.0))).execute(&*connection).map_err(|e| Debug(e.into()))?;
     Ok(Redirect::to("/"))
 }
 
