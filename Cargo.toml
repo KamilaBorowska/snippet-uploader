@@ -7,7 +7,7 @@ authors = ["Konrad Borowski <konrad@borowski.pw>"]
 rocket = { git = "https://github.com/SergioBenitez/Rocket/" }
 rocket_codegen = { git = "https://github.com/SergioBenitez/Rocket/" }
 rocket_contrib = { git = "https://github.com/SergioBenitez/Rocket/", default-features = false, features = ["tera_templates"] }
-diesel = { version = "0.13.0", features = ["postgres", "network-address", "chrono"] }
+diesel = { version = "1.4.6", features = ["postgres", "network-address", "chrono"] }
 diesel_codegen = { version = "0.13.0", features = ["postgres"] }
 r2d2 = "0.7.2"
 r2d2-diesel = "0.13.0"
