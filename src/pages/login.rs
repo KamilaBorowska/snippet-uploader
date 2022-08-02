@@ -19,11 +19,11 @@ use std::net::SocketAddr;
 
 fn csrf_token_for(address: &SocketAddr) -> String {
     let mut hasher = Sha256::default();
-    hasher.input(b"GERNVEWffewjomfewomoewnvikrnv53858328r");
-    hasher.input(address.ip().to_string().as_bytes());
-    hasher.input(b"EWGGgjrwgvmewogn32ng3otno3gjo3whgo4hgo4hj90ge0wsm0f");
+    hasher.update(b"GERNVEWffewjomfewomoewnvikrnv53858328r");
+    hasher.update(address.ip().to_string().as_bytes());
+    hasher.update(b"EWGGgjrwgvmewogn32ng3otno3gjo3whgo4hgo4hj90ge0wsm0f");
     hasher
-        .result()
+        .finalize()
         .iter()
         .map(|v| format!("{:02x}", v))
         .collect()
