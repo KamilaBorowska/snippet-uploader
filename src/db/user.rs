@@ -1,15 +1,15 @@
-use diesel::prelude::*;
 use diesel;
 use diesel::pg::PgConnection;
+use diesel::prelude::*;
 
 use rocket::http::{Cookie, CookieJar};
-use rocket::request::{FromRequest, Request, Outcome};
+use rocket::request::{FromRequest, Outcome, Request};
 
 use bcrypt;
 use ipnetwork::IpNetwork;
 
-use crate::Connection;
 use crate::db::schema::{logins, users};
+use crate::Connection;
 
 use std::net::{IpAddr, SocketAddr};
 
@@ -44,7 +44,8 @@ impl UserId {
         use crate::db::schema::sessions;
 
         let UserId(id) = self;
-        let session_id: i32 = diesel::insert(&NewUid { user_id: id }).into(sessions::table)
+        let session_id: i32 = diesel::insert(&NewUid { user_id: id })
+            .into(sessions::table)
             .returning(sessions::dsl::session_id)
             .get_result(connection)?;
         cookie_jar.add_private(Cookie::new("session_id", session_id.to_string()));
@@ -73,7 +74,7 @@ impl RegisterForm {
 
     pub fn register(&self, connection: &PgConnection) -> Result<UserId> {
         #[derive(Insertable)]
-        #[table_name="users"]
+        #[table_name = "users"]
         struct NewUser<'a> {
             name: &'a str,
             password: &'a str,
@@ -85,36 +86,41 @@ impl RegisterForm {
             name: &self.name,
             password: &bcrypt::hash(&self.password, BCRYPT_COST).unwrap(),
         };
-        let id = diesel::insert(&new_user).into(users::table)
+        let id = diesel::insert(&new_user)
+            .into(users::table)
             .execute(connection)?;
         Ok(UserId(id as i32))
     }
 }
 
 #[derive(Insertable)]
-#[table_name="logins"]
+#[table_name = "logins"]
 struct NewLogin {
     ip: IpNetwork,
     user_id: i32,
     successful: bool,
 }
 
-fn log_login(connection: &PgConnection,
-             UserId(id): UserId,
-             ip_to_insert: IpAddr,
-             successful_login: bool)
-             -> QueryResult<()> {
+fn log_login(
+    connection: &PgConnection,
+    UserId(id): UserId,
+    ip_to_insert: IpAddr,
+    successful_login: bool,
+) -> QueryResult<()> {
     diesel::insert(&NewLogin {
-                        user_id: id,
-                        ip: IpNetwork::new(ip_to_insert,
-                                           match ip_to_insert {
-                                               IpAddr::V4(_) => 32,
-                                               IpAddr::V6(_) => 128,
-                                           })
-                                .unwrap(),
-                        successful: successful_login,
-                    }).into(logins::table)
-            .execute(connection)?;
+        user_id: id,
+        ip: IpNetwork::new(
+            ip_to_insert,
+            match ip_to_insert {
+                IpAddr::V4(_) => 32,
+                IpAddr::V6(_) => 128,
+            },
+        )
+        .unwrap(),
+        successful: successful_login,
+    })
+    .into(logins::table)
+    .execute(connection)?;
     Ok(())
 }
 
@@ -135,7 +141,8 @@ impl LoginForm {
 
         use crate::db::schema::users::dsl::*;
 
-        let row: PasswordRow = users.filter(name.eq(&self.name))
+        let row: PasswordRow = users
+            .filter(name.eq(&self.name))
             .select((user_id, password))
             .first(connection)?;
 
@@ -171,9 +178,10 @@ impl<'r> FromRequest<'r> for UserId {
                 use crate::db::schema::sessions::dsl::*;
 
                 let result = match sessions
-                          .filter(session_id.eq(session))
-                          .select(user_id)
-                          .first(&*connection) {
+                    .filter(session_id.eq(session))
+                    .select(user_id)
+                    .first(&*connection)
+                {
                     Ok(result) => result,
                     Err(_) => return Outcome::Forward(()),
                 };
