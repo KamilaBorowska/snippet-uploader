@@ -4,7 +4,7 @@ pub mod user;
 use std::ops::Deref;
 
 use diesel::pg::PgConnection;
-use diesel::r2d2::{Pool, PooledConnection, ConnectionManager};
+use diesel::r2d2::{ConnectionManager, Pool, PooledConnection};
 
 use rocket::http::Status;
 use rocket::request::{FromRequest, Outcome};
