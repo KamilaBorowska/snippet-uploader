@@ -110,7 +110,7 @@ fn display_logins(
         .filter(dsl::user_id.eq(user_id.0))
         .filter(dsl::successful.eq(false))
         .select((dsl::ip, dsl::time, dsl::successful))
-        .order((dsl::time.desc()))
+        .order(dsl::time.desc())
         .limit(10)
         .load(&*connection)
         .map_err(|e| Debug(e.into()))?;

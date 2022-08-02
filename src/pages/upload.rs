@@ -25,7 +25,7 @@ async fn upload(
     connection: Connection,
     user_id: UserId,
     mut upload: Form<TempFile<'_>>,
-) -> Result<Flash<Redirect>, Debug<Box<Error>>> {
+) -> Result<Flash<Redirect>, Debug<Box<dyn Error>>> {
     let name: String = if let Some(name) = upload.name() {
         name.into()
     } else {
