@@ -3,10 +3,6 @@ extern crate rocket;
 #[macro_use]
 extern crate diesel;
 #[macro_use]
-extern crate diesel_codegen;
-extern crate r2d2;
-extern crate r2d2_diesel;
-#[macro_use]
 extern crate serde_derive;
 extern crate bcrypt;
 #[macro_use]
@@ -20,7 +16,7 @@ mod db;
 mod pages;
 mod static_file;
 
-use chrono::naive::datetime::NaiveDateTime;
+use chrono::naive::NaiveDateTime;
 use ipnetwork::IpNetwork;
 use rocket::request::FlashMessage;
 use rocket::response::{Debug, Flash, Redirect};

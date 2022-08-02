@@ -4,17 +4,15 @@ pub mod user;
 use std::ops::Deref;
 
 use diesel::pg::PgConnection;
-use r2d2::{Config, Pool, PooledConnection};
-use r2d2_diesel::ConnectionManager;
+use diesel::r2d2::{Pool, PooledConnection, ConnectionManager};
 
 use rocket::http::Status;
 use rocket::request::{FromRequest, Outcome};
 use rocket::{Request, State};
 
 pub fn init_pool() -> Pool<ConnectionManager<PgConnection>> {
-    let config = Config::default();
     let manager = ConnectionManager::new("postgresql://");
-    Pool::new(config, manager).expect("db pool")
+    Pool::new(manager).expect("db pool")
 }
 
 pub struct Connection(PooledConnection<ConnectionManager<PgConnection>>);

@@ -44,8 +44,8 @@ impl UserId {
         use crate::db::schema::sessions;
 
         let UserId(id) = self;
-        let session_id: i32 = diesel::insert(&NewUid { user_id: id })
-            .into(sessions::table)
+        let session_id: i32 = diesel::insert_into(sessions::table)
+            .values(&NewUid { user_id: id })
             .returning(sessions::dsl::session_id)
             .get_result(connection)?;
         cookie_jar.add_private(Cookie::new("session_id", session_id.to_string()));
@@ -86,8 +86,8 @@ impl RegisterForm {
             name: &self.name,
             password: &bcrypt::hash(&self.password, BCRYPT_COST).unwrap(),
         };
-        let id = diesel::insert(&new_user)
-            .into(users::table)
+        let id = diesel::insert_into(users::table)
+            .values(&new_user)
             .execute(connection)?;
         Ok(UserId(id as i32))
     }
@@ -107,20 +107,20 @@ fn log_login(
     ip_to_insert: IpAddr,
     successful_login: bool,
 ) -> QueryResult<()> {
-    diesel::insert(&NewLogin {
-        user_id: id,
-        ip: IpNetwork::new(
-            ip_to_insert,
-            match ip_to_insert {
-                IpAddr::V4(_) => 32,
-                IpAddr::V6(_) => 128,
-            },
-        )
-        .unwrap(),
-        successful: successful_login,
-    })
-    .into(logins::table)
-    .execute(connection)?;
+    diesel::insert_into(logins::table)
+        .values(&NewLogin {
+            user_id: id,
+            ip: IpNetwork::new(
+                ip_to_insert,
+                match ip_to_insert {
+                    IpAddr::V4(_) => 32,
+                    IpAddr::V6(_) => 128,
+                },
+            )
+            .unwrap(),
+            successful: successful_login,
+        })
+        .execute(connection)?;
     Ok(())
 }
 

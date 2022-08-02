@@ -43,13 +43,13 @@ async fn upload(
         .await
         .map_err(|e| Debug(e.into()))?;
 
-    diesel::insert(&NewFile {
-        name: &name,
-        user_id: user_id.0,
-    })
-    .into(files::table)
-    .execute(&*connection)
-    .map_err(|e| Debug(e.into()))?;
+    diesel::insert_into(files::table)
+        .values(&NewFile {
+            name: &name,
+            user_id: user_id.0,
+        })
+        .execute(&*connection)
+        .map_err(|e| Debug(e.into()))?;
 
     Ok(Flash::success(Redirect::to("/"), "Plik został wrzucony."))
 }
