@@ -9,7 +9,6 @@ extern crate bcrypt;
 extern crate error_chain;
 extern crate chrono;
 extern crate ipnetwork;
-extern crate multipart;
 extern crate sha2;
 
 mod db;
