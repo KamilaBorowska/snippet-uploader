@@ -870,9 +870,12 @@ dependencies = [
 
 [[package]]
 name = "ipnetwork"
-version = "0.12.4"
+version = "0.18.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "20d809e232d6881e169c23122ec4efd8b4e7ded32b22fdcb8dc140edf465743b"
+checksum = "4088d739b183546b239688ddbc79891831df421773df95e236daf7867866d355"
+dependencies = [
+ "serde",
+]
 
 [[package]]
 name = "itoa"
