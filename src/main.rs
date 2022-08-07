@@ -15,7 +15,7 @@ mod static_file;
 
 use crate::db::schema::files;
 use crate::db::user::UserId;
-use crate::db::{init_pool, Connection};
+use crate::db::Connection;
 use chrono::naive::NaiveDateTime;
 use diesel::prelude::*;
 use ipnetwork::IpNetwork;
@@ -37,17 +37,21 @@ struct Context<'a, T> {
 }
 
 #[get("/")]
-fn main_page(
+async fn main_page(
     connection: Connection,
     user_id: UserId,
-    flash: Option<FlashMessage>,
+    flash: Option<FlashMessage<'_>>,
 ) -> Result<Template, Debug<Box<dyn Error>>> {
     use crate::db::schema::files::dsl;
     let message = flash.as_ref().map(|f| f.message());
-    let files = files::table
-        .filter(dsl::user_id.eq(user_id.0))
-        .select(dsl::name)
-        .load(&*connection)
+    let files = connection
+        .run(move |c| {
+            files::table
+                .filter(dsl::user_id.eq(user_id.0))
+                .select(dsl::name)
+                .load(c)
+        })
+        .await
         .map_err(|e| Debug(e.into()))?;
 
     #[derive(Serialize)]
@@ -70,10 +74,10 @@ fn main_page(
 }
 
 #[get("/logins")]
-fn display_logins(
+async fn display_logins(
     connection: Connection,
     user_id: UserId,
-) -> Result<Template, Debug<Box<dyn Error>>> {
+) -> Result<Template, Debug<Box<dyn Error + Sync + Send>>> {
     #[derive(Queryable)]
     struct Row {
         ip: IpNetwork,
@@ -89,23 +93,28 @@ fn display_logins(
     }
 
     use crate::db::schema::logins::{dsl, table};
-    let successful_logins = table
-        .filter(dsl::user_id.eq(user_id.0))
-        .filter(dsl::successful.eq(true))
-        .select((dsl::ip, dsl::time, dsl::successful))
-        .order(dsl::time.desc())
-        .limit(5)
-        .load(&*connection)
-        .map_err(|e| Debug(e.into()))?;
+    let (successful_logins, unsuccessful_logins) = connection
+        .run(move |c| {
+            let successful_logins = table
+                .filter(dsl::user_id.eq(user_id.0))
+                .filter(dsl::successful.eq(true))
+                .select((dsl::ip, dsl::time, dsl::successful))
+                .order(dsl::time.desc())
+                .limit(5)
+                .load(c)?;
 
-    let unsuccessful_logins = table
-        .filter(dsl::user_id.eq(user_id.0))
-        .filter(dsl::successful.eq(false))
-        .select((dsl::ip, dsl::time, dsl::successful))
-        .order(dsl::time.desc())
-        .limit(10)
-        .load(&*connection)
-        .map_err(|e| Debug(e.into()))?;
+            let unsuccessful_logins = table
+                .filter(dsl::user_id.eq(user_id.0))
+                .filter(dsl::successful.eq(false))
+                .select((dsl::ip, dsl::time, dsl::successful))
+                .order(dsl::time.desc())
+                .limit(10)
+                .load(c)?;
+
+            Ok((successful_logins, unsuccessful_logins))
+        })
+        .await
+        .map_err(|e| Debug(e))?;
 
     Ok(Template::render(
         "logins",
@@ -175,7 +184,7 @@ fn file_display(user_id: i32, path: String) -> Result<Template, io::Error> {
 #[launch]
 fn rocket() -> _ {
     rocket::build()
-        .manage(init_pool())
+        .attach(Connection::fairing())
         .attach(Template::fairing())
         .mount(
             "/",

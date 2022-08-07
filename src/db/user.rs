@@ -34,7 +34,7 @@ error_chain! {
 pub struct UserId(pub i32);
 
 impl UserId {
-    pub fn login(self, cookie_jar: &CookieJar<'_>, connection: &PgConnection) -> Result<()> {
+    pub async fn login(self, cookie_jar: &CookieJar<'_>, connection: Connection) -> Result<()> {
         #[derive(Insertable)]
         #[table_name = "sessions"]
         struct NewUid {
@@ -44,10 +44,14 @@ impl UserId {
         use crate::db::schema::sessions;
 
         let UserId(id) = self;
-        let session_id: i32 = diesel::insert_into(sessions::table)
-            .values(&NewUid { user_id: id })
-            .returning(sessions::dsl::session_id)
-            .get_result(connection)?;
+        let session_id: i32 = connection
+            .run(move |c| {
+                diesel::insert_into(sessions::table)
+                    .values(&NewUid { user_id: id })
+                    .returning(sessions::dsl::session_id)
+                    .get_result(c)
+            })
+            .await?;
         cookie_jar.add_private(Cookie::new("session_id", session_id.to_string()));
         Ok(())
     }
@@ -177,10 +181,14 @@ impl<'r> FromRequest<'r> for UserId {
 
                 use crate::db::schema::sessions::dsl::*;
 
-                let result = match sessions
-                    .filter(session_id.eq(session))
-                    .select(user_id)
-                    .first(&*connection)
+                let result = match connection
+                    .run(move |c| {
+                        sessions
+                            .filter(session_id.eq(session))
+                            .select(user_id)
+                            .first(c)
+                    })
+                    .await
                 {
                     Ok(result) => result,
                     Err(_) => return Outcome::Forward(()),
