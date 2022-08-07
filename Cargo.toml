@@ -11,6 +11,6 @@ diesel = { version = "1.4.6", features = ["chrono", "network-address", "postgres
 serde = { version = "1.0.142", features = ["derive"] }
 bcrypt = "0.13.0"
 error-chain = "0.12.4"
-ipnetwork = "0.18.0"
+ipnetwork = "0.20.0"
 chrono = "0.4.20"
 sha2 = "0.10.2"

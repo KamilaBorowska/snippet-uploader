@@ -397,7 +397,7 @@ dependencies = [
  "byteorder",
  "chrono",
  "diesel_derives",
- "ipnetwork",
+ "ipnetwork 0.18.0",
  "libc",
  "pq-sys",
  "r2d2",
@@ -874,6 +874,15 @@ name = "ipnetwork"
 version = "0.18.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4088d739b183546b239688ddbc79891831df421773df95e236daf7867866d355"
+dependencies = [
+ "serde",
+]
+
+[[package]]
+name = "ipnetwork"
+version = "0.20.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bf466541e9d546596ee94f9f69590f89473455f88372423e0008fc1a7daf100e"
 dependencies = [
  "serde",
 ]
@@ -1727,7 +1736,7 @@ dependencies = [
  "chrono",
  "diesel",
  "error-chain",
- "ipnetwork",
+ "ipnetwork 0.20.0",
  "rocket",
  "rocket_dyn_templates",
  "serde",
