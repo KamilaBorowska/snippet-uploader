@@ -2,8 +2,6 @@
 extern crate rocket;
 #[macro_use]
 extern crate diesel;
-#[macro_use]
-extern crate serde_derive;
 extern crate bcrypt;
 #[macro_use]
 extern crate error_chain;
@@ -15,18 +13,17 @@ mod db;
 mod pages;
 mod static_file;
 
-use chrono::naive::NaiveDateTime;
-use ipnetwork::IpNetwork;
-use rocket::request::FlashMessage;
-use rocket::response::{Debug, Flash, Redirect};
-use rocket_dyn_templates::Template;
-
 use crate::db::schema::files;
 use crate::db::user::UserId;
 use crate::db::{init_pool, Connection};
+use chrono::naive::NaiveDateTime;
 use diesel::prelude::*;
+use ipnetwork::IpNetwork;
 use pages::{login, register, upload as upload_page};
-
+use rocket::request::FlashMessage;
+use rocket::response::{Debug, Flash, Redirect};
+use rocket_dyn_templates::Template;
+use serde::Serialize;
 use std::error::Error;
 use std::fs::File;
 use std::io::{self, Read};
