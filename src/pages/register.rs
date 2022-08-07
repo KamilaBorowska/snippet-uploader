@@ -14,15 +14,16 @@ use crate::db::user::{self, RegisterForm};
 use crate::Context;
 
 #[post("/", data = "<form>")]
-fn register(
+async fn register(
     cookie_jar: &CookieJar<'_>,
     form: Form<RegisterForm>,
-    db: Connection,
+    connection: Connection,
 ) -> Result<Result<Flash<Redirect>, Template>, Debug<user::Error>> {
     let user = form.into_inner();
-    match user.register(&db) {
+    let (res, user) = connection.run(|c| (user.register(c), user)).await;
+    match res {
         Ok(id) => {
-            id.login(cookie_jar, &db)?;
+            id.login(cookie_jar, connection).await?;
             Ok(Ok(Flash::success(
                 Redirect::to("/"),
                 "Konto zarejestrowane.",

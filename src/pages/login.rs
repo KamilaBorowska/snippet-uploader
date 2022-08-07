@@ -30,19 +30,19 @@ fn csrf_token_for(address: &SocketAddr) -> String {
 }
 
 #[post("/", data = "<form>")]
-fn index(
+async fn index(
     cookie_jar: &CookieJar<'_>,
     form: Form<LoginForm>,
     address: SocketAddr,
-    db: Connection,
+    connection: Connection,
 ) -> Result<Flash<Redirect>, Debug<user::Error>> {
     let user = form.into_inner();
     if csrf_token_for(&address) != user.csrf {
         return Ok(Flash::error(Redirect::to("/login"), "Nie ma tokenu CSRF"));
     }
-    match user.login(&db, address) {
+    match connection.run(move |c| user.login(c, address)).await {
         Ok(id) => {
-            id.login(cookie_jar, &db)?;
+            id.login(cookie_jar, connection).await?;
             Ok(Flash::success(Redirect::to("/"), "Zalogowano."))
         }
         Err(e) => Ok(Flash::error(
@@ -76,10 +76,11 @@ fn page(flash: Option<FlashMessage>, address: SocketAddr) -> Template {
 }
 
 #[get("/logout")]
-fn logout(user: UserId, connection: Connection) -> Result<Redirect, Debug<Error>> {
+async fn logout(user: UserId, connection: Connection) -> Result<Redirect, Debug<Error>> {
     use crate::db::schema::sessions::dsl::*;
-    diesel::delete(sessions.filter(user_id.eq(user.0)))
-        .execute(&*connection)
+    connection
+        .run(move |c| diesel::delete(sessions.filter(user_id.eq(user.0))).execute(c))
+        .await
         .map_err(|e| Debug(e.into()))?;
     Ok(Redirect::to("/"))
 }

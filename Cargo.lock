@@ -1571,6 +1571,30 @@ dependencies = [
 ]
 
 [[package]]
+name = "rocket_sync_db_pools"
+version = "0.1.0-rc.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5fa48b6ab25013e9812f1b0c592741900b3a2a83c0936292e0565c0ac842f558"
+dependencies = [
+ "diesel",
+ "r2d2",
+ "rocket",
+ "rocket_sync_db_pools_codegen",
+ "serde",
+ "tokio",
+]
+
+[[package]]
+name = "rocket_sync_db_pools_codegen"
+version = "0.1.0-rc.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "280ef2d232923e69cb93da156972eb5476a7cce5ba44843f6608f46a4abf7aab"
+dependencies = [
+ "devise",
+ "quote",
+]
+
+[[package]]
 name = "rustc-demangle"
 version = "0.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1730,6 +1754,7 @@ dependencies = [
  "ipnetwork",
  "rocket",
  "rocket_dyn_templates",
+ "rocket_sync_db_pools",
  "serde",
  "sha2",
 ]

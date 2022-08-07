@@ -5,12 +5,13 @@ authors = ["Konrad Borowski <konrad@borowski.pw>"]
 edition = "2021"
 
 [dependencies]
-rocket = { version = "=0.5.0-rc.2", features = ["secrets"] }
-rocket_dyn_templates = { version = "=0.1.0-rc.2", features = ["tera"] }
-diesel = { version = "1.4.6", features = ["chrono", "network-address", "postgres", "r2d2"] }
-serde = { version = "1.0.142", features = ["derive"] }
 bcrypt = "0.13.0"
+chrono = "0.4.20"
+diesel = { version = "1.4.6", features = ["chrono", "network-address", "postgres", "r2d2"] }
 error-chain = "0.12.4"
 ipnetwork = "0.18.0"
-chrono = "0.4.20"
+rocket = { version = "=0.5.0-rc.2", features = ["secrets"] }
+rocket_dyn_templates = { version = "=0.1.0-rc.2", features = ["tera"] }
+rocket_sync_db_pools = { version = "0.1.0-rc.2", features = ["diesel_postgres_pool"] }
+serde = { version = "1.0.142", features = ["derive"] }
 sha2 = "0.10.2"
